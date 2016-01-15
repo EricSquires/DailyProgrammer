@@ -1,31 +1,24 @@
 package com.DailyProgrammer;
 
 import java.util.Random;
+import java.util.Scanner;
 
 public class Main {
-    private static Random rand = new Random();
-
     public static void main(String[] args) {
         String target;
 
         if(args.length == 0) {
             System.out.print("Target word: ");
-            target = System.console().readLine();
+
+            Scanner scanner = new Scanner(System.in);
+            target = scanner.nextLine();
         }
         else {
             target = args[0];
         }
 
-        StringBuilder builder = new StringBuilder();
-        int fit;
-        int lastFit = Integer.MAX_VALUE;
-        String lastGuess;
+        Simple simpleFit = new Simple(10, 5, 0.05);
 
-        do {
-            buildGuess(builder, target.length());
-            fit = fitness(builder.toString(), target);
-
-        }
-        while(fit > 0);
+        System.out.println(simpleFit.getFit(target) + " generations to find a match");
     }
 }
