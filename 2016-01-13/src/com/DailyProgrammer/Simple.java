@@ -1,5 +1,9 @@
 package com.DailyProgrammer;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -15,7 +19,7 @@ public class Simple {
     private final int numSelected;
     private final double mutateChance;
 
-    private Comparator<String> comparator;
+    private FitComparator comparator;
 
     public Simple(int numChildren, int numSelected, double mutateChance) {
         this.numChildren = numChildren;
@@ -24,16 +28,25 @@ public class Simple {
     }
 
     public int getFit(String target) {
+        System.out.format("Finding fit for '%s' with %d children, %d selected per generation and a %f%% mutation chance", target, numChildren, numSelected, mutateChance);
         comparator = new FitComparator(target);
 
-        String[] currentGen = spawnGeneration(target);
+        String[] currentGen = null;
         int generation = 0;
+        int printGen = 1;
 
-        while(currentGen[0] != target) {
-            generation++;
+        do {
             currentGen = spawnGeneration(currentGen, target);
-        }
+            generation++;
 
+            if(generation % printGen == 0) {
+                printGen *= 2;
+                System.out.println("Generation " + generation + ": Max fitness (" + comparator.fitness(currentGen[0], target) + ") " + Arrays.toString(currentGen));
+            }
+        }
+        while(!currentGen[0].equals(target));
+
+        System.out.println("Generation " + generation + ": Max fitness (" + comparator.fitness(currentGen[0], target) + ") " + Arrays.toString(currentGen));
         return generation;
     }
 
@@ -48,11 +61,15 @@ public class Simple {
     }
 
     private String[] spawnGeneration(String[] parents, String target) {
+        if(parents == null) {
+            return spawnGeneration(target);
+        }
+
         String[] children = new String[parents.length * numChildren];
 
         for(int i = 0; i < parents.length; i++) {
             for(int j = 0; j < numChildren; j++) {
-                children[i * j] = mutate(parents[i]);
+                children[i * j] = mutate(parents[i], target);
             }
         }
 
@@ -70,7 +87,8 @@ public class Simple {
         return ret;
     }
 
-    private String mutate(String txt) {
+    @NotNull
+    private String mutate(String txt, String target) {
         StringBuilder builder = new StringBuilder(txt);
 
         for(int i = 0; i < builder.length(); i++) {
@@ -96,11 +114,12 @@ public class Simple {
         return (char)(rand.nextInt(charRange) + lowChar);
     }
 
+    @NotNull
     private static String getRandString(int length) {
         StringBuilder builder = new StringBuilder(length);
 
         for(int i = 0; i < length; i++) {
-            builder.setCharAt(i, getRandChar());
+            builder.append(getRandChar());
         }
 
         return builder.toString();
@@ -114,11 +133,6 @@ public class Simple {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            return obj == this;
-        }
-
-        @Override
         public int compare(String o1, String o2) {
             int num1 = fitness(o1, target);
             int num2 = fitness(o2, target);
@@ -126,7 +140,11 @@ public class Simple {
             return num1 - num2;
         }
 
-        private int fitness(String current, String target) {
+        public int fitness(String current, String target) {
+            if(current == null || target == null) {
+                return Integer.MAX_VALUE;
+            }
+
             int fit = 0;
 
             for(int i = 0; i < target.length(); i++) {
@@ -136,7 +154,8 @@ public class Simple {
             return fit;
         }
 
-        private int charFitness(char current, char target) {
+        @Contract(pure = true)
+        public int charFitness(char current, char target) {
             return Math.abs(current - target);
         }
     }
